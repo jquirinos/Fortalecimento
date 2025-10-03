@@ -1,1 +1,615 @@
 
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fortalecimento Lombar e Quadril</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #0a0a0a; --secondary-color: #1a1a1a; --text-color: #e0e0e0;
+            --accent-color: #e91e63; --success-color: #4caf50; --danger-color: #f44336;
+            --warning-color: #ff9800; --info-color: #2196f3; --pr-color: #f9b115;
+            --input-bg: #333; --border-color: #444;
+            --calendar-day-bg: #2c2c2e; --calendar-day-hover: #3a3a3c;
+            --calendar-upper-color: #e91e63; --calendar-lower-color: #4caf50;
+        }
+        [data-theme="light"] {
+            --primary-color: #f8f9fa; --secondary-color: #ffffff; --text-color: #0a0a0a;
+            --input-bg: #e9ecef; --border-color: #dee2e6;
+            --calendar-day-bg: #e9ecef; --calendar-day-hover: #d1d5db;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            background-color: var(--primary-color); color: var(--text-color); margin: 0; padding: 1rem;
+            line-height: 1.6; transition: background-color 0.3s, color 0.3s;
+        }
+        .container { max-width: 800px; margin: 0 auto; padding: 1rem; }
+        .header-container { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--accent-color); }
+        h1 { text-align: left; color: var(--accent-color); border-bottom: none; margin: 0; padding-bottom: 0.5rem; font-size: 1.8rem; }
+        h2, h3 { text-align: center; color: var(--accent-color); }
+        .theme-switcher { font-size: 1.5rem; cursor: pointer; background: none; border: none; color: var(--text-color); padding: 0.5rem; }
+        .main-controls, .workout-selector { display: flex; justify-content: center; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap; }
+        .tab-button, .main-button, .secondary-button {
+            padding: 0.75rem 1.5rem; font-size: 1rem; font-weight: bold; cursor: pointer;
+            border: 2px solid var(--accent-color); background-color: transparent; color: var(--accent-color);
+            border-radius: 8px; transition: background-color 0.3s, color 0.3s;
+        }
+        .tab-button:hover, .tab-button.active { background-color: var(--accent-color); color: var(--primary-color); }
+        .main-button { border-color: var(--success-color); color: var(--success-color); }
+        .main-button:hover { background-color: var(--success-color); color: var(--primary-color); }
+        .secondary-button { font-size: 0.8rem; padding: 0.5rem 1rem; border-color: #6c757d; color: #6c757d; }
+        .secondary-button:hover { background-color: #6c757d; color: white; }
+        .workout-header { text-align: center; }
+        .workout-plan { display: none; } .workout-plan.active { display: block; }
+        .workout-meta { color: #888; margin-top: -1rem; margin-bottom: 1rem; font-style: italic; }
+        .variation-notice { background-color: var(--warning-color); color: #1a1a1a; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; text-align: center; font-weight: bold; }
+        .exercise-card { background-color: var(--secondary-color); border-radius: 10px; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 4px 8px rgba(0,0,0,0.1); transition: background-color 0.3s; }
+        .exercise-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1rem; }
+        .exercise-title { font-size: 1.5rem; font-weight: bold; margin: 0; }
+        .exercise-meta { font-size: 0.9rem; color: #aaa; }
+        .pr-badge { font-size: 0.8rem; color: var(--pr-color); font-weight: bold; margin-left: 10px; }
+        .sets-table { width: 100%; border-collapse: collapse; }
+        .sets-table th, .sets-table td { padding: 0.75rem; text-align: center; border-bottom: 1px solid var(--border-color); transition: opacity 0.3s; }
+        .sets-table th { font-size: 0.9rem; text-transform: uppercase; color: #bbb; }
+        .set-row.completed td { opacity: 0.5; text-decoration: line-through; }
+        .set-row.completed .input-field { text-decoration: line-through; }
+        .input-field { width: 70px; padding: 0.5rem; background-color: var(--input-bg); color: var(--text-color); border: 1px solid #555; border-radius: 5px; text-align: center; font-size: 1rem; }
+        .input-field::placeholder { color: #888; font-size: 0.9em; }
+        .set-checkbox { width: 22px; height: 22px; cursor: pointer; }
+        .timer-button { padding: 0.75rem 1rem; font-size: 1rem; font-weight: bold; cursor: pointer; border: none; border-radius: 8px; background-color: var(--success-color); color: white; transition: background-color 0.3s; min-width: 180px; }
+        .timer-button.timing { background-color: var(--danger-color); cursor: not-allowed; }
+        .notes-section { margin-top: 2rem; }
+        .notes-section textarea { width: 100%; box-sizing: border-box; height: 80px; background-color: var(--input-bg); color: var(--text-color); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.75rem; font-family: inherit; font-size: 1rem; resize: vertical; }
+        .finish-button { display: block; width: 100%; padding: 1rem; font-size: 1.2rem; font-weight: bold; margin-top: 1rem; background-color: var(--accent-color); color: var(--primary-color); border: none; border-radius: 8px; cursor: pointer; }
+        .finish-button:hover { opacity: 0.9; }
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.85); align-items: center; justify-content: center; }
+        .modal.show { display: flex; }
+        .modal-content { background-color: var(--secondary-color); margin: auto; padding: 2rem; border: 1px solid #888; width: 95%; max-width: 800px; border-radius: 10px; position: relative; }
+        .close-button { color: #aaa; position: absolute; top: 10px; right: 20px; font-size: 28px; font-weight: bold; cursor: pointer; z-index: 1010; }
+        .modal-tabs { display: flex; border-bottom: 1px solid var(--border-color); margin-bottom: 1.5rem; }
+        .modal-tab-button { background: none; border: none; color: var(--text-color); padding: 1rem; font-size: 1rem; cursor: pointer; border-bottom: 3px solid transparent; }
+        .modal-tab-button.active { border-bottom-color: var(--accent-color); font-weight: bold; }
+        .modal-view { display: none; } .modal-view.active { display: block; }
+        .chart-controls { display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; align-items: center; }
+        .chart-controls select { padding: 0.5rem; background-color: var(--input-bg); color: var(--text-color); border: 1px solid #555; border-radius: 5px; }
+        #history-manager, #pr-manager { max-height: 400px; overflow-y: auto; }
+        .history-manager-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem; }
+        .data-io-button { padding: 0.5rem 1rem; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .export-button { background-color: var(--success-color); color: white; }
+        .import-button { background-color: var(--info-color); color: white; }
+        .history-item, .pr-item { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; border-bottom: 1px solid var(--border-color); }
+        .history-item-info, .pr-item-info { font-size: 0.9rem; }
+        .history-item-info strong, .pr-item-info strong { color: var(--accent-color); }
+        .pr-item-details { color: var(--pr-color); font-weight: bold; }
+        .history-item-notes { font-style: italic; color: #aaa; font-size: 0.85rem; margin-top: 5px; max-width: 80%; }
+        .delete-btn { background: transparent; border: none; color: var(--danger-color); font-size: 1.5rem; cursor: pointer; }
+        #consistency-calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+        .calendar-header { text-align: center; font-weight: bold; font-size: 0.8rem; }
+        .calendar-day { background-color: var(--calendar-day-bg); height: 40px; border-radius: 5px; transition: background-color 0.2s; position: relative; }
+        .calendar-day.has-data:hover { background-color: var(--calendar-day-hover); }
+        .calendar-day span { position: absolute; top: 5px; left: 5px; font-size: 0.7rem; }
+        .workout-dots { position: absolute; bottom: 5px; left: 50%; transform: translateX(-50%); display: flex; gap: 3px; }
+        .dot { width: 6px; height: 6px; border-radius: 50%; }
+        .dot.upper { background-color: var(--calendar-upper-color); }
+        .dot.lower { background-color: var(--calendar-lower-color); }
+        .info-box { background-color: var(--info-color); color: white; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; }
+        .info-box h4 { margin-top: 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header-container">
+            <h1>Fortalecimento Lombar e Quadril</h1>
+            <button class="theme-switcher" id="theme-switcher">🌙</button>
+        </div>
+        
+        <div class="info-box">
+            <h4>🎯 Programa Especializado para Mulheres</h4>
+            <p>Este programa foi desenvolvido especificamente para fortalecer a região lombar e quadris, ajudando a aliviar dores, melhorar a postura e aumentar a estabilidade do core. Recomenda-se realizar 2-3 treinos por semana, em dias não consecutivos.</p>
+        </div>
+        
+        <div class="main-controls" style="margin-top: 2rem;">
+            <button class="main-button" onclick="openChartModal()">Ver Evolução</button>
+        </div>
+        
+        <div class="workout-selector">
+            <button class="tab-button active" onclick="showWorkout('TreinoA')">Treino A - Core & Glúteos</button>
+            <button class="tab-button" onclick="showWorkout('TreinoB')">Treino B - Cadeia Posterior</button>
+        </div>
+        
+        <div id="workout-TreinoA" class="workout-plan active"></div>
+        <div id="workout-TreinoB" class="workout-plan"></div>
+    </div>
+    
+    <div id="chartModal" class="modal"></div>
+    <input type="file" id="import-file-input" accept=".json" style="display: none;">
+
+<script>
+    const workouts = {
+        TreinoA: [
+            { name: 'Ponte de Glúteos', sets: 3, reps: '12-15', rest: 60, description: 'Fortalece glúteos e estabiliza a pelve' },
+            { name: 'Perdigueiro', sets: 3, reps: '10 cada lado', rest: 60, description: 'Trabalha estabilidade do core e coordenação' },
+            { name: 'Agachamento (sem peso)', sets: 3, reps: '15-20', rest: 90, description: 'Fortalece quadríceps, glúteos e core' },
+            { name: 'Prancha Isométrica', sets: 3, reps: '30-60s', rest: 60, description: 'Fortalece todo o core e estabiliza a coluna' },
+            { name: 'Rotação da Coluna (deitada)', sets: 2, reps: '10 cada lado', rest: 60, description: 'Melhora mobilidade da coluna vertebral' },
+        ],
+        TreinoB: [
+            { name: 'Superman', sets: 3, reps: '12-15', rest: 60, description: 'Fortalece músculos eretores da espinha' },
+            { name: 'Stiff (com halteres leves)', sets: 3, reps: '10-12', rest: 90, description: 'Trabalha cadeia posterior e lombar' },
+            { name: 'Alongamento Gato-Camelo', sets: 2, reps: '10', rest: 60, description: 'Melhora mobilidade da coluna' },
+            { name: 'Elevação Pélvica Unilateral', sets: 3, reps: '10 cada lado', rest: 60, description: 'Fortalece glúteos e estabiliza pelve' },
+            { name: 'Mobilidade de Quadril 90/90', sets: 2, reps: '20s cada lado', rest: 60, description: 'Melhora flexibilidade dos quadris' },
+        ]
+    };
+    
+    const VARIATION_THRESHOLD = 12;
+
+    function calculateWorkoutTime(workout) {
+        const timePerSet = 45, timeBetweenExercises = 90; 
+        let totalTime = 0;
+        workout.forEach(ex => { 
+            totalTime += ex.sets * timePerSet + (ex.sets - 1) * ex.rest + timeBetweenExercises; 
+        });
+        return Math.round(totalTime / 60);
+    }
+
+    function getPersonalRecord(exerciseName) {
+        const history = JSON.parse(localStorage.getItem('workoutHistory')) || [];
+        let maxWeight = 0;
+        history.forEach(w => w.exercises.forEach(ex => {
+            if (ex.name === exerciseName) { 
+                const currentMax = Math.max(0, ...ex.sets.map(s => s.weight || 0)); 
+                if (currentMax > maxWeight) maxWeight = currentMax; 
+            }
+        }));
+        return maxWeight;
+    }
+
+    function getSuggestedWeight(exerciseName) {
+        // Para exercícios de peso corporal, não sugerir peso
+        const bodyweightExercises = ['Ponte de Glúteos', 'Perdigueiro', 'Agachamento (sem peso)', 'Prancha Isométrica', 'Superman', 'Alongamento Gato-Camelo', 'Elevação Pélvica Unilateral', 'Mobilidade de Quadril 90/90', 'Rotação da Coluna (deitada)'];
+        if (bodyweightExercises.includes(exerciseName)) {
+            return 'Peso corporal';
+        }
+        
+        const lastWeight = getPersonalRecord(exerciseName);
+        if (!lastWeight) return '2-5kg';
+        const suggestedIncrease = Math.max(lastWeight * 0.05, 1);
+        let suggestedWeight = lastWeight + suggestedIncrease;
+        suggestedWeight = Math.round(suggestedWeight * 2) / 2;
+        return `Sug: ${suggestedWeight}kg`;
+    }
+
+    function createExerciseHTML(exercise) {
+        const pr = getPersonalRecord(exercise.name);
+        const prBadge = pr > 0 ? `<span class="pr-badge">🏆 PR: ${pr}kg</span>` : '';
+        const placeholder = getSuggestedWeight(exercise.name);
+        let tableRows = '';
+        
+        const isBodyweight = placeholder === 'Peso corporal';
+        const isTime = exercise.reps.includes('s');
+        
+        for (let i = 1; i <= exercise.sets; i++) {
+            if (isTime) {
+                tableRows += `<tr class="set-row"><td>${i}</td><td><input type="text" class="input-field weight-input" placeholder="Tempo (s)"></td><td><input type="checkbox" class="set-checkbox" onchange="toggleSetCompleted(this)"></td></tr>`;
+            } else if (isBodyweight) {
+                tableRows += `<tr class="set-row"><td>${i}</td><td>Peso corporal</td><td><input type="checkbox" class="set-checkbox" onchange="toggleSetCompleted(this)"></td></tr>`;
+            } else {
+                tableRows += `<tr class="set-row"><td>${i}</td><td><input type="number" class="input-field weight-input" placeholder="${placeholder}"></td><td><input type="checkbox" class="set-checkbox" onchange="toggleSetCompleted(this)"></td></tr>`;
+            }
+        }
+        
+        const weightHeader = isTime ? 'Tempo' : (isBodyweight ? 'Carga' : 'Peso (kg)');
+        
+        return `<div class="exercise-card" data-exercise-name="${exercise.name}" data-rep-goal="${exercise.reps.split('-')[1] || exercise.reps}">
+            <div class="exercise-header">
+                <div>
+                    <h3 class="exercise-title">${exercise.name}${prBadge}</h3>
+                    <p class="exercise-meta">${exercise.sets} séries x ${exercise.reps} reps</p>
+                    <p class="exercise-meta" style="color: #888; font-size: 0.85rem;">${exercise.description}</p>
+                </div>
+                <button class="timer-button" onclick="startTimer(this, ${exercise.rest})">Iniciar Descanso (${exercise.rest}s)</button>
+            </div>
+            <table class="sets-table">
+                <thead>
+                    <tr><th>Série</th><th>${weightHeader}</th><th>Feito ✔</th></tr>
+                </thead>
+                <tbody>${tableRows}</tbody>
+            </table>
+        </div>`;
+    }
+    
+    function toggleSetCompleted(checkbox) { 
+        checkbox.closest('.set-row').classList.toggle('completed', checkbox.checked); 
+    }
+
+    function renderWorkouts() {
+        const history = JSON.parse(localStorage.getItem('workoutHistory')) || [];
+        for (const workoutId in workouts) {
+            const container = document.getElementById(`workout-${workoutId}`);
+            if (!container) continue;
+
+            const workoutSessionCount = history.filter(w => w.workoutId === workoutId).length;
+            let variationNoticeHTML = '';
+            if (workoutSessionCount >= VARIATION_THRESHOLD) {
+                variationNoticeHTML = `<div class="variation-notice">🧠 **Hora de Variar?** Você já fez este treino ${workoutSessionCount} vezes. Considere aumentar a intensidade ou adicionar variações para continuar progredindo.</div>`;
+            }
+
+            const time = calculateWorkoutTime(workouts[workoutId]);
+            const workoutTitle = workoutId === 'TreinoA' ? 'Treino A - Core & Glúteos' : 'Treino B - Cadeia Posterior';
+            let html = `${variationNoticeHTML}<div class="workout-header"><h2>${workoutTitle}</h2><p class="workout-meta">⏱️ Tempo Estimado: ~${time} minutos</p><button class="secondary-button" onclick="fillFromLastWorkout('${workoutId}')">Preencher com Último Treino</button></div>`;
+            
+            workouts[workoutId].forEach(ex => { html += createExerciseHTML(ex); });
+            html += `<div class="notes-section"><label for="notes-${workoutId}"><h3>Notas do Treino</h3></label><textarea id="notes-${workoutId}" placeholder="Como se sentiu hoje? Alguma dor? O treino rendeu? Observações sobre a execução dos exercícios..."></textarea></div>`;
+            html += `<button class="finish-button" onclick="saveWorkout('${workoutId}')">Finalizar Treino</button>`;
+            container.innerHTML = html;
+        }
+    }
+
+    function showWorkout(workoutId) {
+        document.querySelectorAll('.workout-plan').forEach(plan => plan.classList.remove('active'));
+        document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+        document.getElementById(`workout-${workoutId}`).classList.add('active');
+        document.querySelector(`[onclick="showWorkout('${workoutId}')"]`).classList.add('active');
+    }
+
+    function startTimer(button, seconds) {
+        if (button.classList.contains('timing')) return;
+        
+        button.classList.add('timing');
+        button.textContent = `Descansando... ${seconds}s`;
+        
+        const interval = setInterval(() => {
+            seconds--;
+            button.textContent = `Descansando... ${seconds}s`;
+            
+            if (seconds <= 0) {
+                clearInterval(interval);
+                button.classList.remove('timing');
+                button.textContent = 'Descanso Finalizado!';
+                button.style.backgroundColor = 'var(--success-color)';
+                
+                setTimeout(() => {
+                    const originalRest = button.getAttribute('onclick').match(/\d+/)[0];
+                    button.textContent = `Iniciar Descanso (${originalRest}s)`;
+                    button.style.backgroundColor = '';
+                }, 2000);
+            }
+        }, 1000);
+    }
+
+    function fillFromLastWorkout(workoutId) {
+        const history = JSON.parse(localStorage.getItem('workoutHistory')) || [];
+        const lastWorkout = history.filter(w => w.workoutId === workoutId).pop();
+        
+        if (!lastWorkout) {
+            alert('Nenhum treino anterior encontrado para este tipo.');
+            return;
+        }
+        
+        lastWorkout.exercises.forEach(ex => {
+            const exerciseCard = document.querySelector(`[data-exercise-name="${ex.name}"]`);
+            if (exerciseCard) {
+                const inputs = exerciseCard.querySelectorAll('.weight-input');
+                ex.sets.forEach((set, index) => {
+                    if (inputs[index] && set.weight) {
+                        inputs[index].value = set.weight;
+                    }
+                });
+            }
+        });
+        
+        alert('Dados do último treino preenchidos!');
+    }
+
+    function saveWorkout(workoutId) {
+        const exercises = [];
+        const exerciseCards = document.querySelectorAll(`#workout-${workoutId} .exercise-card`);
+        
+        exerciseCards.forEach(card => {
+            const exerciseName = card.getAttribute('data-exercise-name');
+            const sets = [];
+            const inputs = card.querySelectorAll('.weight-input');
+            const checkboxes = card.querySelectorAll('.set-checkbox');
+            
+            inputs.forEach((input, index) => {
+                const weight = input.value || 0;
+                const completed = checkboxes[index].checked;
+                sets.push({ weight: parseFloat(weight) || 0, completed });
+            });
+            
+            exercises.push({ name: exerciseName, sets });
+        });
+        
+        const notes = document.getElementById(`notes-${workoutId}`).value;
+        const workoutData = {
+            workoutId,
+            date: new Date().toISOString(),
+            exercises,
+            notes
+        };
+        
+        const history = JSON.parse(localStorage.getItem('workoutHistory')) || [];
+        history.push(workoutData);
+        localStorage.setItem('workoutHistory', JSON.stringify(history));
+        
+        alert('Treino salvo com sucesso! 💪');
+        
+        // Reset form
+        exerciseCards.forEach(card => {
+            card.querySelectorAll('.weight-input').forEach(input => input.value = '');
+            card.querySelectorAll('.set-checkbox').forEach(checkbox => {
+                checkbox.checked = false;
+                checkbox.closest('.set-row').classList.remove('completed');
+            });
+        });
+        document.getElementById(`notes-${workoutId}`).value = '';
+    }
+
+    function openChartModal() {
+        const modal = document.getElementById('chartModal');
+        modal.innerHTML = `
+            <div class="modal-content">
+                <span class="close-button" onclick="closeChartModal()">&times;</span>
+                <div class="modal-tabs">
+                    <button class="modal-tab-button active" onclick="showModalView('progress')">Progresso</button>
+                    <button class="modal-tab-button" onclick="showModalView('history')">Histórico</button>
+                    <button class="modal-tab-button" onclick="showModalView('consistency')">Consistência</button>
+                </div>
+                <div id="progress-view" class="modal-view active">
+                    <div class="chart-controls">
+                        <label>Exercício: <select id="exercise-select"></select></label>
+                        <label>Período: <select id="period-select">
+                            <option value="30">Últimos 30 dias</option>
+                            <option value="90">Últimos 3 meses</option>
+                            <option value="365">Último ano</option>
+                        </select></label>
+                    </div>
+                    <canvas id="progressChart" width="400" height="200"></canvas>
+                </div>
+                <div id="history-view" class="modal-view">
+                    <div class="history-manager-header">
+                        <h3>Gerenciar Histórico</h3>
+                        <div>
+                            <button class="data-io-button export-button" onclick="exportData()">Exportar Dados</button>
+                            <button class="data-io-button import-button" onclick="document.getElementById('import-file-input').click()">Importar Dados</button>
+                        </div>
+                    </div>
+                    <div id="history-manager"></div>
+                </div>
+                <div id="consistency-view" class="modal-view">
+                    <h3>Calendário de Consistência</h3>
+                    <div id="consistency-calendar"></div>
+                </div>
+            </div>
+        `;
+        
+        modal.classList.add('show');
+        loadProgressChart();
+        loadHistoryManager();
+        loadConsistencyCalendar();
+    }
+
+    function closeChartModal() {
+        document.getElementById('chartModal').classList.remove('show');
+    }
+
+    function showModalView(viewName) {
+        document.querySelectorAll('.modal-view').forEach(view => view.classList.remove('active'));
+        document.querySelectorAll('.modal-tab-button').forEach(btn => btn.classList.remove('active'));
+        document.getElementById(`${viewName}-view`).classList.add('active');
+        document.querySelector(`[onclick="showModalView('${viewName}')"]`).classList.add('active');
+    }
+
+    function loadProgressChart() {
+        const history = JSON.parse(localStorage.getItem('workoutHistory')) || [];
+        const exerciseSelect = document.getElementById('exercise-select');
+        
+        // Populate exercise dropdown
+        const exercises = [...new Set(history.flatMap(w => w.exercises.map(e => e.name)))];
+        exerciseSelect.innerHTML = exercises.map(ex => `<option value="${ex}">${ex}</option>`).join('');
+        
+        if (exercises.length > 0) {
+            updateProgressChart();
+            exerciseSelect.addEventListener('change', updateProgressChart);
+            document.getElementById('period-select').addEventListener('change', updateProgressChart);
+        }
+    }
+
+    function updateProgressChart() {
+        const history = JSON.parse(localStorage.getItem('workoutHistory')) || [];
+        const selectedExercise = document.getElementById('exercise-select').value;
+        const periodDays = parseInt(document.getElementById('period-select').value);
+        
+        const cutoffDate = new Date();
+        cutoffDate.setDate(cutoffDate.getDate() - periodDays);
+        
+        const filteredData = history
+            .filter(w => new Date(w.date) >= cutoffDate)
+            .flatMap(w => w.exercises.filter(e => e.name === selectedExercise).map(e => ({
+                date: w.date,
+                maxWeight: Math.max(...e.sets.map(s => s.weight || 0))
+            })))
+            .filter(d => d.maxWeight > 0);
+        
+        const ctx = document.getElementById('progressChart').getContext('2d');
+        
+        if (window.progressChart) {
+            window.progressChart.destroy();
+        }
+        
+        window.progressChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: filteredData.map(d => new Date(d.date).toLocaleDateString('pt-BR')),
+                datasets: [{
+                    label: 'Peso Máximo (kg)',
+                    data: filteredData.map(d => d.maxWeight),
+                    borderColor: '#e91e63',
+                    backgroundColor: 'rgba(233, 30, 99, 0.1)',
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: `Progresso - ${selectedExercise}`,
+                        color: '#e0e0e0'
+                    },
+                    legend: {
+                        labels: { color: '#e0e0e0' }
+                    }
+                },
+                scales: {
+                    x: { ticks: { color: '#e0e0e0' } },
+                    y: { ticks: { color: '#e0e0e0' } }
+                }
+            }
+        });
+    }
+
+    function loadHistoryManager() {
+        const history = JSON.parse(localStorage.getItem('workoutHistory')) || [];
+        const container = document.getElementById('history-manager');
+        
+        if (history.length === 0) {
+            container.innerHTML = '<p>Nenhum treino registrado ainda.</p>';
+            return;
+        }
+        
+        container.innerHTML = history.map((workout, index) => `
+            <div class="history-item">
+                <div class="history-item-info">
+                    <strong>${workout.workoutId === 'TreinoA' ? 'Treino A - Core & Glúteos' : 'Treino B - Cadeia Posterior'}</strong><br>
+                    ${new Date(workout.date).toLocaleDateString('pt-BR')} às ${new Date(workout.date).toLocaleTimeString('pt-BR')}
+                    ${workout.notes ? `<div class="history-item-notes">"${workout.notes}"</div>` : ''}
+                </div>
+                <button class="delete-btn" onclick="deleteWorkout(${index})" title="Excluir treino">🗑️</button>
+            </div>
+        `).reverse().join('');
+    }
+
+    function loadConsistencyCalendar() {
+        const history = JSON.parse(localStorage.getItem('workoutHistory')) || [];
+        const container = document.getElementById('consistency-calendar');
+        
+        // Create calendar for current month
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = now.getMonth();
+        const firstDay = new Date(year, month, 1);
+        const lastDay = new Date(year, month + 1, 0);
+        const daysInMonth = lastDay.getDate();
+        const startingDayOfWeek = firstDay.getDay();
+        
+        // Headers
+        const headers = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+        let calendarHTML = headers.map(h => `<div class="calendar-header">${h}</div>`).join('');
+        
+        // Empty cells for days before month starts
+        for (let i = 0; i < startingDayOfWeek; i++) {
+            calendarHTML += '<div class="calendar-day"></div>';
+        }
+        
+        // Days of month
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            const dayWorkouts = history.filter(w => w.date.startsWith(dateStr));
+            
+            let dotsHTML = '';
+            if (dayWorkouts.length > 0) {
+                const hasA = dayWorkouts.some(w => w.workoutId === 'TreinoA');
+                const hasB = dayWorkouts.some(w => w.workoutId === 'TreinoB');
+                if (hasA) dotsHTML += '<div class="dot upper"></div>';
+                if (hasB) dotsHTML += '<div class="dot lower"></div>';
+            }
+            
+            calendarHTML += `
+                <div class="calendar-day ${dayWorkouts.length > 0 ? 'has-data' : ''}">
+                    <span>${day}</span>
+                    <div class="workout-dots">${dotsHTML}</div>
+                </div>
+            `;
+        }
+        
+        container.innerHTML = calendarHTML;
+    }
+
+    function deleteWorkout(index) {
+        if (confirm('Tem certeza que deseja excluir este treino?')) {
+            const history = JSON.parse(localStorage.getItem('workoutHistory')) || [];
+            history.splice(history.length - 1 - index, 1);
+            localStorage.setItem('workoutHistory', JSON.stringify(history));
+            loadHistoryManager();
+            loadConsistencyCalendar();
+        }
+    }
+
+    function exportData() {
+        const history = JSON.parse(localStorage.getItem('workoutHistory')) || [];
+        const dataStr = JSON.stringify(history, null, 2);
+        const dataBlob = new Blob([dataStr], {type: 'application/json'});
+        const url = URL.createObjectURL(dataBlob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `treino-lombar-quadril-${new Date().toISOString().split('T')[0]}.json`;
+        link.click();
+        URL.revokeObjectURL(url);
+    }
+
+    document.getElementById('import-file-input').addEventListener('change', function(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const importedHistory = JSON.parse(e.target.result);
+                if (Array.isArray(importedHistory)) {
+                    if (confirm("ATENÇÃO: Isso apagará todos os seus dados atuais. Deseja continuar?")) {
+                        localStorage.setItem('workoutHistory', JSON.stringify(importedHistory));
+                        alert(`${importedHistory.length} registros importados com sucesso!`);
+                        location.reload();
+                    }
+                }
+            } catch (error) {
+                alert('Erro ao importar o arquivo. Verifique se o arquivo é um JSON válido.');
+            }
+        };
+        reader.readAsText(file);
+        event.target.value = '';
+    });
+
+    const themeSwitcher = document.getElementById('theme-switcher');
+    const doc = document.documentElement;
+    
+    function applyTheme(theme) {
+        doc.setAttribute('data-theme', theme);
+        themeSwitcher.textContent = theme === 'dark' ? '☀️' : '🌙';
+        localStorage.setItem('theme', theme);
+    }
+
+    themeSwitcher.addEventListener('click', () => {
+        const currentTheme = doc.getAttribute('data-theme') || 'dark';
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        applyTheme(newTheme);
+    });
+
+    window.onclick = function(event) { 
+        if (event.target == document.getElementById('chartModal')) closeChartModal(); 
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        applyTheme(savedTheme);
+        renderWorkouts();
+        showWorkout('TreinoA');
+    });
+</script>
+
+</body>
+</html>
